@@ -33,6 +33,7 @@ class ChatWrapper:
             import openai
             openai.api_key = api_key
             # Run chain and append input.
+            chain = get_chain(vectorstore)
             output = chain({"question": inp, "chat_history": history})["answer"]
             history.append((inp, output))
         except Exception as e:
