@@ -1,6 +1,7 @@
 from langchain.prompts.prompt import PromptTemplate
 from langchain.llms import OpenAI
 from langchain.chains import ConversationalRetrievalChain
+from pgvector import Float4Arg
 
 from dotenv import load_dotenv
 
@@ -30,11 +31,21 @@ Answer in Markdown:"""
 QA_PROMPT = PromptTemplate(template=template, input_variables=["question", "context"])
 
 
+# def get_chain(vectorstore):
+#     llm = OpenAI(temperature=0, openai_api_key=os.getenv('OPENAI_API_KEY'))
+#     qa_chain = ConversationalRetrievalChain.from_llm(
+#         llm,
+#         vectorstore.as_retriever(),
+#         condense_question_prompt=CONDENSE_QUESTION_PROMPT,
+#     )
+#     return qa_chain
+
 def get_chain(vectorstore):
-    llm = OpenAI(temperature=0, openai_api_key=os.getenv('OPENAI_API_KEY'))
-    qa_chain = ConversationalRetrievalChain.from_llm(
-        llm,
-        vectorstore.as_retriever(),
-        condense_question_prompt=CONDENSE_QUESTION_PROMPT,
+    return vectorstore.create_chain(
+        name="chats",
+        query_args=[
+            Float4Arg("question"),
+            Float4Arg("chat_history", default=[[]]),
+        ],
+        response_arg=Float4Arg("answer"),
     )
-    return qa_chain

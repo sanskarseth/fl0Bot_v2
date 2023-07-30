@@ -6,3 +6,4 @@ unstructured
 faiss-cpu
 python-dotenv
 tiktoken
+pgvector
