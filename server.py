@@ -19,8 +19,6 @@ app = Flask(__name__)
 def check():
     vectorstore_file = "vectorstore.pkl"
     
-    create_vectorstore()
-
     with open(vectorstore_file, "rb") as f:
         vectorstore = pickle.load(f)
         return vectorstore
@@ -72,12 +70,12 @@ def chat_api():
 app.add_url_rule("/api/chat", "chat_api", chat_api, methods=["POST"])
 
 
-# @app.route("/create_vectorstore", methods=["POST"])
-# def create_vectorstore():
+@app.route("/create_vectorstore", methods=["POST"])
+def create_vectorstoree():
 
-#     create_vectorstore()
-#     # Return a response indicating success
-#     return jsonify({"message": "Vector store created successfully!"}), 201
+    create_vectorstore()
+    # Return a response indicating success
+    return jsonify({"message": "Vector store created successfully!"}), 201
 
 if __name__ == "__main__":
     app.run()
