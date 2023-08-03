@@ -1,100 +1,159 @@
-import os
-import pickle
-from typing import Optional, Tuple
-from threading import Lock
-
 from flask import Flask, request, jsonify
-
-from app.query_data import get_chain
-# from app.ingest_data import create_vectorstore
+from langchain.vectorstores.pgvector import PGVector
+import os
+from dotenv import load_dotenv
+import pandas as pd
+import tiktoken
+from langchain.text_splitter import TokenTextSplitter
+from langchain.document_loaders import DataFrameLoader
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores.pgvector import DistanceStrategy
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import RetrievalQA
+import psycopg2 as dbb
+import pgvector
+from psycopg2.extras import execute_values
+from pgvector.psycopg2 import register_vector
 
 app = Flask(__name__)
 
-# Load the vectorstore
-with open("vectorstore.pkl", "rb") as f:
-    vectorstore = pickle.load(f)
+# Load environment variables and create the connection string
+load_dotenv()
 
-# Check if the vectorstore file exists, and if not, create it
+host = os.getenv('HOST')
+port = os.getenv('PORT')
+user = os.getenv('USER')
+password = os.getenv('PASSWORD')
+dbname = os.getenv('DB')
 
-# def check():
-#     vectorstore_file = "vectorstore.pkl"
+CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=disable"
+# VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# # Automate the installation of pgvector extension and table setup
+# def setup_pgvector():
+#     connection = dbb.connect(
+#         host=host,
+#         port=port,
+#         user=user,
+#         password=password,
+#     )
+
+#     try:
+#         # Connect to PostgreSQL database and create the extension
+#         with connection:
+#             cur = connection.cursor()
+
+#             #install pgvector
+#             cur.execute("CREATE EXTENSION IF NOT EXISTS vector");
+#             connection.commit()
+
+#             from pgvector.psycopg2 import register_vector
+#             register_vector(connection)
+#             print("pgvector extension installed successfully.")
+#     except Exception as e:
+#         print(f"Error installing pgvector extension: {e}")
+#         raise
+        
+
+# setup_pgvector()
+
+
+# Load the CSV data and preprocess it
+df = pd.read_csv('app/social_media.csv')
+
+# Helper function: calculate number of tokens
+def num_tokens_from_string(string: str, encoding_name="cl100k_base") -> int:
+    if not string:
+        return 0
+    # Returns the number of tokens in a text string
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+# Split text into chunks of 512 tokens, with 20% token overlap
+text_splitter = TokenTextSplitter(chunk_size=512, chunk_overlap=103)
+
+# Create a new list by splitting up text into token sizes of around 512 tokens
+new_list = []
+for i in range(len(df.index)):
+    text = df['content'][i]
+    token_len = num_tokens_from_string(text)
+    if token_len <= 512:
+        new_list.append([df['title'][i], df['content'][i], df['origin'][i]])
+    else:
+        # split text into chunks using text splitter
+        split_text = text_splitter.split_text(text)
+        for j in range(len(split_text)):
+            new_list.append([df['title'][i], split_text[j], df['origin'][i]])
+
+df_new = pd.DataFrame(new_list, columns=['title', 'content', 'origin'])
+
+# Load documents from Pandas dataframe for insertion into database
+loader = DataFrameLoader(df_new, page_content_column='content')
+docs = loader.load()
+
+# Create OpenAI embedding using LangChain's OpenAIEmbeddings class
+embeddings = OpenAIEmbeddings()
+query_string = "PostgreSQL is my favorite database"
+embed = embeddings.embed_query(query_string)
+
+# Create a PGVector instance to house the documents and embeddings
+db = PGVector.from_documents(
+    documents=docs,
+    embedding=embeddings,
+    collection_name="blog_posts",
+    distance_strategy=DistanceStrategy.COSINE,
+    connection_string=CONNECTION_STRING
+)
+
+@app.route('/api/embed', methods=['POST'])
+def embed_text():
+    data = request.get_json()
+    query_string = data['query']
     
-#     with open(vectorstore_file, "rb") as f:
-#         vectorstore = pickle.load(f)
-#         return vectorstore
+    # Initialize embeddings and create the OpenAI embedding for the query
+    embeddings = OpenAIEmbeddings()
+    embed = embeddings.embed_query(query_string)
+    
+    return jsonify(embed)
 
-# class ChatWrapper:
-#     def __init__(self):
-#         self.lock = Lock()
+@app.route('/api/similarity_search', methods=['POST'])
+def similarity_search():
+    data = request.get_json()
+    query = data['query']
+    
+    # Fetch the k=3 most similar documents
+    docs = db.similarity_search(query, k=3)
+    
+    # Prepare the response data
+    response_data = []
+    for doc in docs:
+        doc_content = doc.page_content
+        doc_metadata = doc.metadata
+        response_data.append({
+            'content': doc_content,
+            'title': doc_metadata['title'],
+            'url': doc_metadata['url']
+        })
+    
+    return jsonify(response_data)
 
-#     def __call__(
-#         self, inp: str, history: Optional[Tuple[str, str]], chain
-#     ):
-#         """Execute the chat functionality."""
-#         self.lock.acquire()
-#         try:
-#             history = history or []
-#             # If chain is None, that is because no API key was provided.
-#             if chain is None:
-#                 history.append((inp, "Bad OpenAI key"))
-#                 return history, history
+@app.route('/api/qa', methods=['POST'])
+def qa():
+    data = request.get_json()
+    query = data['query']
+    
+    # Create the retriever from the database with k=3 results
+    retriever = db.as_retriever(search_kwargs={"k": 3})
+    
+    # Initialize the language model and QA pipeline
+    llm = ChatOpenAI(temperature=0.0, model='gpt-3.5-turbo-16k', openai_api_key=os.getenv('OPENAI_API_KEY'))
+    qa_stuff = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
+    
+    # Run the QA pipeline with the given query
+    response = qa_stuff.run(query)
+    
+    return jsonify({'response': response})
 
-#             # # Run chain and append input.
-#             # chain = get_chain(vectorstore)
-#             # print(chain)
-
-#             output = chain({"question": inp, "chat_history": history})["answer"]
-#             print(output)
-
-#             history.append((inp, output))
-#         except Exception as e:
-#             raise e
-#         finally:
-#             self.lock.release()
-#         return history, history
-
-# def chat_api():
-#     data = request.json
-#     inp = data.get("question")
-#     history = []
-#     # chain = get_chain(check())
-#     chain=get_chain(vectorstore)
-#     # print(chain)
-#     if chain is None:
-#         return jsonify({"error": "Invalid OpenAI API key"}), 400
-
-#     chat = ChatWrapper()
-#     output,_ = chat(inp, history, chain)
-
-#     return {"output": output}
-
-
-# @app.route("/create_vectorstore", methods=["POST"])
-# def create_vectorstoree():
-
-#     create_vectorstore()
-#     # Return a response indicating success
-#     return jsonify({"message": "Vector store created successfully!"}), 201
-
-def chat_bot():
-    data = request.json
-    question = data.get("question")
-    qa_chain = get_chain(vectorstore)
-    chat_history = []
-
-    result = qa_chain({"question": question, "chat_history": chat_history})
-    chat_history.append((question, result["answer"]))
-
-    return {"ai": (result["answer"])}
-
-
-app.add_url_rule("/api/chat", "chat_api", chat_api, methods=["POST"])
-app.add_url_rule("/api/ai", "chat_bot", chat_bot, methods=["POST"])
-
-if __name__ == "__main__":
-    app.run()
-
-
-#  myenv\Scripts\activate
-# python ingest_data.py
-# python app.py
+if __name__ == '__main__':
+    app.run(debug=True)
