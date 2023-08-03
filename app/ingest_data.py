@@ -11,40 +11,40 @@ load_dotenv()
 
 import os
 
-# # Load Data
-# loader = UnstructuredFileLoader("app/data.txt")
-# raw_documents = loader.load()
+# Load Data
+loader = UnstructuredFileLoader("app/data.txt")
+raw_documents = loader.load()
 
-# # Split text
-# text_splitter = RecursiveCharacterTextSplitter()
-# documents = text_splitter.split_documents(raw_documents)
-
-
-# # Load Data to vectorstore
-# embeddings = OpenAIEmbeddings(openai_api_key=os.getenv('OPENAI_API_KEY'))
-# vectorstore = FAISS.from_documents(documents, embeddings)
+# Split text
+text_splitter = RecursiveCharacterTextSplitter()
+documents = text_splitter.split_documents(raw_documents)
 
 
-# # Save vectorstore
-# with open("vectorstore.pkl", "wb") as f:
-#     pickle.dump(vectorstore, f)
+# Load Data to vectorstore
+embeddings = OpenAIEmbeddings(openai_api_key=os.getenv('OPENAI_API_KEY'))
+vectorstore = FAISS.from_documents(documents, embeddings)
 
 
-def create_vectorstore():
-    # Load Data
-    loader = UnstructuredFileLoader("app/data.txt")
-    raw_documents = loader.load()
+# Save vectorstore
+with open("vectorstore.pkl", "wb") as f:
+    pickle.dump(vectorstore, f)
 
-    # Split text
-    text_splitter = RecursiveCharacterTextSplitter()
-    documents = text_splitter.split_documents(raw_documents)
 
-    # Load Data to vectorstore
-    embeddings = OpenAIEmbeddings(openai_api_key=os.getenv('OPENAI_API_KEY'))
-    vectorstore = FAISS.from_documents(documents, embeddings)
+# def create_vectorstore():
+#     # Load Data
+#     loader = UnstructuredFileLoader("app/data.txt")
+#     raw_documents = loader.load()
 
-    # Save vectorstore
-    with open("vectorstore.pkl", "wb") as f:
-        pickle.dump(vectorstore, f)
+#     # Split text
+#     text_splitter = RecursiveCharacterTextSplitter()
+#     documents = text_splitter.split_documents(raw_documents)
+
+#     # Load Data to vectorstore
+#     embeddings = OpenAIEmbeddings(openai_api_key=os.getenv('OPENAI_API_KEY'))
+#     vectorstore = FAISS.from_documents(documents, embeddings)
+
+#     # Save vectorstore
+#     with open("vectorstore.pkl", "wb") as f:
+#         pickle.dump(vectorstore, f)
     
-    # return vectorstore
+#     # return vectorstore
