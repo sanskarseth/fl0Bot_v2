@@ -26,7 +26,7 @@ user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=disable"
+CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=enable"
 # VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
 # # Automate the installation of pgvector extension and table setup
