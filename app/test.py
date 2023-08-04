@@ -14,7 +14,7 @@ password= os.getenv('PASSWORD')
 dbname= os.getenv('DB')
 
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+CONNECTION_STRING = f"postgres://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
 
 import pandas as pd
 import numpy as np
