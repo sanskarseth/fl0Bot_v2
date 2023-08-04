@@ -21,7 +21,7 @@ app = Flask(__name__)
 load_dotenv()
 
 host = os.getenv('HOST')
-port = os.getenv('PORT')
+port = os.getenv('DBPORT')
 user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
