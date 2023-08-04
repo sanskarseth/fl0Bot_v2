@@ -156,4 +156,5 @@ def qa():
     return jsonify({'response': response})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8443, threaded=True, request_timeout=600)
+    # app.run(debug=True)
