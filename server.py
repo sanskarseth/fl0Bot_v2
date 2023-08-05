@@ -30,33 +30,33 @@ CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbn
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
 # Automate the installation of pgvector extension and table setup
-def setup_pgvector():
-    connection = dbb.connect(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        sslmode='require',
-    )
+# def setup_pgvector():
+#     connection = dbb.connect(
+#         host=host,
+#         port=port,
+#         user=user,
+#         password=password,
+#         sslmode='require',
+#     )
 
-    try:
-        # Connect to PostgreSQL database and create the extension
-        with connection:
-            cur = connection.cursor()
+#     try:
+#         # Connect to PostgreSQL database and create the extension
+#         with connection:
+#             cur = connection.cursor()
 
-            #install pgvector
-            cur.execute("CREATE EXTENSION IF NOT EXISTS vector");
-            connection.commit()
+#             #install pgvector
+#             cur.execute("CREATE EXTENSION IF NOT EXISTS vector");
+#             connection.commit()
 
-            from pgvector.psycopg2 import register_vector
-            register_vector(connection)
-            print("pgvector extension installed successfully.")
-    except Exception as e:
-        print(f"Error installing pgvector extension: {e}")
-        raise
+#             from pgvector.psycopg2 import register_vector
+#             register_vector(connection)
+#             print("pgvector extension installed successfully.")
+#     except Exception as e:
+#         print(f"Error installing pgvector extension: {e}")
+#         raise
         
 
-setup_pgvector()
+# setup_pgvector()
 
 
 # Load the CSV data and preprocess it
