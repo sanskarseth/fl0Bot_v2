@@ -36,6 +36,7 @@ def setup_pgvector():
         port=port,
         user=user,
         password=password,
+        sslmode='require',
     )
 
     try:
