@@ -25,7 +25,7 @@ user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=disable"
+CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
 def database_exists():
@@ -35,7 +35,7 @@ def database_exists():
         port=port,
         user=user,
         password=password,
-        sslmode='disable',
+        sslmode='require',
     )
 
     # Check if the database exists
@@ -52,7 +52,7 @@ def create_db():
             port=port,
             user=user,
             password=password,
-            sslmode='disable',
+            sslmode='require',
         )
 
         try:
