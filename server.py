@@ -26,14 +26,17 @@ user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
 endpoint = os.getenv('ENDPOINT')
+encoded_endpoint = urllib.parse.quote(endpoint)
+sslmode = 'require'
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require&options=endpoint%3D{endpoint}"
-CONNECTION_STRING_NO_DB = f"postgresql+psycopg2://{user}:{password}@{host}:{port}?sslmode=require&options=endpoint%3D{endpoint}"
+CONNECTION_STRING = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c search_path=public'"
+CONNECTION_STRING_NO_DB = f"host={host} user={user} password={password} sslmode={sslmode} options='-c search_path=public'"
+
+
+# CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+# CONNECTION_STRING_NO_DB = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
-# Encode the endpoint ID in the connection string
-endpoint_id = "ep-cold-bar-94865795.ap-southeast-1.aws.neon.tech"
-encoded_endpoint_id = urllib.parse.quote(endpoint_id)
 
 def database_exists():
     # Connect to PostgreSQL without specifying a database
