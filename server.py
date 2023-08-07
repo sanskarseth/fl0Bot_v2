@@ -31,10 +31,10 @@ sslmode = 'require'
 # sslmode = 'disable'
 
 # CONNECTION_STRING = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
-CONNECTION_STRING_NO_DB = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
+CONNECTION_STRING_NO_DB = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c search_path=public -c options=endpoint={endpoint}'"
 
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require&options=endpoint%3D{endpoint}"
+# CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require&options=endpoint%3D{endpoint}"
 # CONNECTION_STRING_NO_DB = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
