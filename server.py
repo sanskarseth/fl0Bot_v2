@@ -13,6 +13,7 @@ from langchain.chains import RetrievalQA
 import psycopg2 as dbb
 from psycopg2.extras import execute_values
 from pgvector.psycopg2 import register_vector
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -27,17 +28,16 @@ dbname = os.getenv('DB')
 endpoint = os.getenv('ENDPOINT')
 
 CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require&options=endpoint%3D{endpoint}"
+CONNECTION_STRING_NO_DB = f"postgresql+psycopg2://{user}:{password}@{host}:{port}?sslmode=require&options=endpoint%3D{endpoint}"
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# Encode the endpoint ID in the connection string
+endpoint_id = "ep-cold-bar-94865795.ap-southeast-1.aws.neon.tech"
+encoded_endpoint_id = urllib.parse.quote(endpoint_id)
 
 def database_exists():
     # Connect to PostgreSQL without specifying a database
-    connection = dbb.connect(
-        host=f"{host}?options=endpoint%3D{endpoint}",
-        port=port,
-        user=user,
-        password=password,
-        sslmode='require',
-    )
+    connection = dbb.connect(CONNECTION_STRING_NO_DB)
 
     # Check if the database exists
     cur = connection.cursor()
@@ -48,13 +48,7 @@ def create_db():
     if not database_exists():
 
         # Connect to PostgreSQL without specifying a database
-        connection = dbb.connect(
-            host=f"{host}?options=endpoint%3D{endpoint}",
-            port=port,
-            user=user,
-            password=password,
-            sslmode='require',
-        )
+        connection = dbb.connect(CONNECTION_STRING_NO_DB)
 
         try:
 
@@ -77,14 +71,7 @@ create_db()
 
 # Automate the installation of pgvector extension and table setup
 def setup_pgvector():
-    connection = dbb.connect(
-        host=f"{host}?options=endpoint%3D{endpoint}",
-        port=port,
-        user=user,
-        database=dbname,
-        password=password,
-        sslmode='disable',
-    )
+    connection = dbb.connect(CONNECTION_STRING)
 
     try:
         # Connect to PostgreSQL database and create the extension
