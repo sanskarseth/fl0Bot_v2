@@ -32,7 +32,7 @@ VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 def database_exists():
     # Connect to PostgreSQL without specifying a database
     connection = dbb.connect(
-        host=host,
+        host=f"{host}?options=endpoint%3D{endpoint}",
         port=port,
         user=user,
         password=password,
@@ -49,7 +49,7 @@ def create_db():
 
         # Connect to PostgreSQL without specifying a database
         connection = dbb.connect(
-            host=host,
+            host=f"{host}?options=endpoint%3D{endpoint}",
             port=port,
             user=user,
             password=password,
@@ -78,7 +78,7 @@ create_db()
 # Automate the installation of pgvector extension and table setup
 def setup_pgvector():
     connection = dbb.connect(
-        host=host,
+        host=f"{host}?options=endpoint%3D{endpoint}",
         port=port,
         user=user,
         database=dbname,
