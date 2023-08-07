@@ -11,7 +11,6 @@ from langchain.vectorstores.pgvector import DistanceStrategy
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 import psycopg2 as dbb
-import pgvector
 from psycopg2.extras import execute_values
 from pgvector.psycopg2 import register_vector
 
@@ -26,37 +25,86 @@ user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=disable"
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
+def database_exists():
+    # Connect to PostgreSQL without specifying a database
+    connection = dbb.connect(
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        sslmode='disable',
+    )
+
+    # Check if the database exists
+    cur = connection.cursor()
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (dbname,))
+    return cur.fetchone() is not None
+
+def create_db():
+    if not database_exists():
+
+        # Connect to PostgreSQL without specifying a database
+        connection = dbb.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            sslmode='disable',
+        )
+
+        try:
+
+            # Set the isolation level to autocommit to avoid running inside a transaction
+            connection.set_isolation_level(dbb.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+
+            # Create the database if it does not exist
+            cur = connection.cursor()
+            cur.execute(f"CREATE DATABASE {dbname}")
+
+        except Exception as e:
+            print(f"Error creating database '{dbname}': {e}")
+            raise
+        finally:
+            # Close the connection after creating the database
+            if connection is not None:
+                connection.close()
+
+create_db()
+
 # Automate the installation of pgvector extension and table setup
-# def setup_pgvector():
-#     connection = dbb.connect(
-#         host=host,
-#         port=port,
-#         user=user,
-#         password=password,
-#         sslmode='require',
-#     )
+def setup_pgvector():
+    connection = dbb.connect(
+        host=host,
+        port=port,
+        user=user,
+        database=dbname,
+        password=password,
+        sslmode='disable',
+    )
 
-#     try:
-#         # Connect to PostgreSQL database and create the extension
-#         with connection:
-#             cur = connection.cursor()
+    try:
+        # Connect to PostgreSQL database and create the extension
+        with connection:
+            cur = connection.cursor()
 
-#             #install pgvector
-#             cur.execute("CREATE EXTENSION IF NOT EXISTS vector");
-#             connection.commit()
+            #install pgvector
+            cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-#             from pgvector.psycopg2 import register_vector
-#             register_vector(connection)
-#             print("pgvector extension installed successfully.")
-#     except Exception as e:
-#         print(f"Error installing pgvector extension: {e}")
-#         raise
+        connection.commit()
+        
+        from pgvector.psycopg2 import register_vector
+        register_vector(connection)
+        print("pgvector extension installed successfully.")
+
+    except Exception as e:
+        print(f"Error installing pgvector extension: {e}")
+        raise
         
 
-# setup_pgvector()
+setup_pgvector()
 
 
 # Load the CSV data and preprocess it
@@ -95,8 +143,8 @@ docs = loader.load()
 
 # Create OpenAI embedding using LangChain's OpenAIEmbeddings class
 embeddings = OpenAIEmbeddings()
-query_string = "PostgreSQL is my favorite database"
-embed = embeddings.embed_query(query_string)
+# query_string = "PostgreSQL is my favorite database"
+# embed = embeddings.embed_query(query_string)
 
 # Create a PGVector instance to house the documents and embeddings
 db = PGVector.from_documents(
@@ -107,37 +155,37 @@ db = PGVector.from_documents(
     connection_string=CONNECTION_STRING
 )
 
-@app.route('/api/embed', methods=['POST'])
-def embed_text():
-    data = request.get_json()
-    query_string = data['query']
+# @app.route('/api/embed', methods=['POST'])
+# def embed_text():
+#     data = request.get_json()
+#     query_string = data['query']
     
-    # Initialize embeddings and create the OpenAI embedding for the query
-    embeddings = OpenAIEmbeddings()
-    embed = embeddings.embed_query(query_string)
+#     # Initialize embeddings and create the OpenAI embedding for the query
+#     embeddings = OpenAIEmbeddings()
+#     embed = embeddings.embed_query(query_string)
     
-    return jsonify(embed)
+#     return jsonify(embed)
 
-@app.route('/api/similarity_search', methods=['POST'])
-def similarity_search():
-    data = request.get_json()
-    query = data['query']
+# @app.route('/api/similarity_search', methods=['POST'])
+# def similarity_search():
+#     data = request.get_json()
+#     query = data['query']
     
-    # Fetch the k=3 most similar documents
-    docs = db.similarity_search(query, k=3)
+#     # Fetch the k=3 most similar documents
+#     docs = db.similarity_search(query, k=3)
     
-    # Prepare the response data
-    response_data = []
-    for doc in docs:
-        doc_content = doc.page_content
-        doc_metadata = doc.metadata
-        response_data.append({
-            'content': doc_content,
-            'title': doc_metadata['title'],
-            'url': doc_metadata['url']
-        })
+#     # Prepare the response data
+#     response_data = []
+#     for doc in docs:
+#         doc_content = doc.page_content
+#         doc_metadata = doc.metadata
+#         response_data.append({
+#             'content': doc_content,
+#             'title': doc_metadata['title'],
+#             'url': doc_metadata['url']
+#         })
     
-    return jsonify(response_data)
+#     return jsonify(response_data)
 
 @app.route('/api/qa', methods=['POST'])
 def qa():
@@ -156,6 +204,12 @@ def qa():
     
     return jsonify({'response': response})
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8443, threaded=True, request_timeout=600)
-    # app.run(debug=True)
+@app.route('/api/ai', methods=['POST'])
+def chat_bot():
+    data = request.json
+    question = data.get("question")
+    ai = ''
+    return {"ai": ai}
+
+if __name__ == "__main__":
+    app.run()
