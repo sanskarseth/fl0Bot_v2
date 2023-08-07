@@ -24,8 +24,9 @@ port = os.getenv('DBPORT')
 user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
+endpoint = os.getenv('ENDPOINT')
 
-CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
+CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require&options=endpoint%3D{endpoint}"
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
 def database_exists():
