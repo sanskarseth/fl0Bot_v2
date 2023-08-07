@@ -27,10 +27,11 @@ password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
 endpoint = os.getenv('ENDPOINT')
 encoded_endpoint = urllib.parse.quote(endpoint)
-sslmode = 'require'
+# sslmode = 'require'
+sslmode = 'disable'
 
 CONNECTION_STRING = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
-CONNECTION_STRING_NO_DB = f"host={host} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
+CONNECTION_STRING_NO_DB = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
 
 
 # CONNECTION_STRING = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}?sslmode=require"
@@ -38,74 +39,74 @@ CONNECTION_STRING_NO_DB = f"host={host} user={user} password={password} sslmode=
 VECTOR_EXTENSION_SQL = "CREATE EXTENSION IF NOT EXISTS vector;"
 
 
-def database_exists():
-    # Connect to PostgreSQL without specifying a database
-    connection = dbb.connect(CONNECTION_STRING_NO_DB)
+# def database_exists():
+#     # Connect to PostgreSQL without specifying a database
+#     connection = dbb.connect(CONNECTION_STRING_NO_DB)
 
-    # Check if the database exists
-    cur = connection.cursor()
-    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (dbname,))
-    return cur.fetchone() is not None
+#     # Check if the database exists
+#     cur = connection.cursor()
+#     cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (dbname,))
+#     return cur.fetchone() is not None
 
-def create_db():
-    if not database_exists():
+# def create_db():
+#     if not database_exists():
 
-        # Connect to PostgreSQL without specifying a database
-        connection = dbb.connect(CONNECTION_STRING_NO_DB)
+#         # Connect to PostgreSQL without specifying a database
+#         connection = dbb.connect(CONNECTION_STRING_NO_DB)
 
-        try:
+#         try:
 
-            # Set the isolation level to autocommit to avoid running inside a transaction
-            connection.set_isolation_level(dbb.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+#             # Set the isolation level to autocommit to avoid running inside a transaction
+#             connection.set_isolation_level(dbb.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
-            # Create the database if it does not exist
-            cur = connection.cursor()
-            cur.execute(f"CREATE DATABASE {dbname}")
+#             # Create the database if it does not exist
+#             cur = connection.cursor()
+#             cur.execute(f"CREATE DATABASE {dbname}")
 
-        except Exception as e:
-            print(f"Error creating database '{dbname}': {e}")
-            raise
-        finally:
-            # Close the connection after creating the database
-            if connection is not None:
-                connection.close()
+#         except Exception as e:
+#             print(f"Error creating database '{dbname}': {e}")
+#             raise
+#         finally:
+#             # Close the connection after creating the database
+#             if connection is not None:
+#                 connection.close()
 
-create_db()
+# create_db()
 
 
-def user_exists():
-    # Connect to PostgreSQL without specifying a database
-    connection = dbb.connect(CONNECTION_STRING_NO_DB)
+# def user_exists():
+#     # Connect to PostgreSQL without specifying a database
+#     connection = dbb.connect(CONNECTION_STRING_NO_DB)
 
-    # Check if the database exists
-    cur = connection.cursor()
-    cur.execute(f"SELECT 1 FROM pg_user WHERE usename = '{user}'")
-    return cur.fetchone() is not None
+#     # Check if the database exists
+#     cur = connection.cursor()
+#     cur.execute(f"SELECT 1 FROM pg_user WHERE usename = '{user}'")
+#     return cur.fetchone() is not None
 
-def create_user():
-    if not user_exists():
+# def create_user():
+#     if not user_exists():
 
-        # Connect to PostgreSQL without specifying a database
-        connection = dbb.connect(CONNECTION_STRING_NO_DB)
+#         # Connect to PostgreSQL without specifying a database
+#         connection = dbb.connect(CONNECTION_STRING_NO_DB)
 
-        try:
+#         try:
 
-            # Set the isolation level to autocommit to avoid running inside a transaction
-            connection.set_isolation_level(dbb.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+#             # Set the isolation level to autocommit to avoid running inside a transaction
+#             connection.set_isolation_level(dbb.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
-            # Create the database if it does not exist
-            cur = connection.cursor()
-            cur.execute(f"CREATE USER {user} WITH PASSWORD '{password}'")
+#             # Create the database if it does not exist
+#             cur = connection.cursor()
+#             cur.execute(f"CREATE USER {user} WITH PASSWORD '{password}'")
 
-        except Exception as e:
-            print(f"Error creating user '{user_exists}': {e}")
-            raise
-        finally:
-            # Close the connection after creating the database
-            if connection is not None:
-                connection.close()
+#         except Exception as e:
+#             print(f"Error creating user '{user_exists}': {e}")
+#             raise
+#         finally:
+#             # Close the connection after creating the database
+#             if connection is not None:
+#                 connection.close()
 
-create_user()
+# create_user()
 
 # Automate the installation of pgvector extension and table setup
 def setup_pgvector():
