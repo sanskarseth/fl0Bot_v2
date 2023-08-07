@@ -27,8 +27,8 @@ password = os.getenv('PASSWORD')
 dbname = os.getenv('DB')
 endpoint = os.getenv('ENDPOINT')
 encoded_endpoint = urllib.parse.quote(endpoint)
-# sslmode = 'require'
-sslmode = 'disable'
+sslmode = 'require'
+# sslmode = 'disable'
 
 CONNECTION_STRING = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
 CONNECTION_STRING_NO_DB = f"host={host} dbname={dbname} user={user} password={password} sslmode={sslmode} options='-c endpoint={encoded_endpoint}'"
