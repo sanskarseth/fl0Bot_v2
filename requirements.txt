@@ -10,3 +10,5 @@ pgvector
 pandas
 numpy
 psycopg2
+psycopg2cffi
+
